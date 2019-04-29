@@ -1,0 +1,157 @@
+{% load staticfiles %}
+
+<html>
+<head>
+
+	<meta charset=utf-8/>
+
+	<title>Agrosavia</title>
+
+	<script src="{% static 'js/jquery.min.js' %}"></script>
+	<script src="{% static 'js/js.cookie.min.js' %}"></script>
+	<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.2.0/css/all.css">
+	<script src="{% static 'js/Chart.min.js' %}"></script>
+
+	{% csrf_token %}
+
+</head>
+
+<body style="margin: 0">
+
+	<div style="background-color: #8cd07b; width: 100%;line-height: 55px;left: 0;top:0;position: fixed;z-index: 1;" id="main">
+
+		<img src="{% static 'img/logo.png' %}" style="display: block;margin-left: auto;margin-right: auto;width: auto;height: 70px;">
+
+	</div>
+
+	<div style="margin-top: 90px;padding-left: 2%;padding-right: 2%">
+
+		<div style="background-color:#dbffd2; height: calc(100vh - 110px); width: 30%;text-align: center;position: relative;display: inline-block;">
+
+			<label style="font-family: Helvetica; font-size: 45px;margin-top: 5%;display: inline-block;%">Estado de la vaca</label>
+
+			<div style="top: -50px;left: 0;bottom: 0;right: 0;margin: auto;position: absolute;height: 200px;">
+				<img id="imagen" src="{% static 'img/' %}{{Imagen}}" style="width: 50%;height: auto;margin:auto;"><br>
+				<label id="texto" style="font-family: Helvetica; font-size: 45px;margin-top: 5%;display: inline-block;%">{{Actividad}}</label>
+			</div>
+
+		</div>
+
+		<div class="chart-container_1" style="background-color:#dbffd2; height: 40vh; width: 65%;position: relative;display: inline-block;float:right;padding: 20px;padding-top: 10px">
+			<canvas id="chart_1" ></canvas>
+		</div>
+
+	</div>
+
+
+
+
+	
+
+</body>
+
+<script type="text/javascript">
+
+	function actualizarDatos()
+	{
+		$.ajax('/actualizarServer', {method: 'post',data: ({'csrfmiddlewaretoken':Cookies.get('csrftoken')}), success: function(transport){
+			respuesta = JSON.parse(transport)
+			$("#imagen").attr("src", "{% static 'img/' %}"+respuesta['imagen'])
+			$("#texto").html(respuesta['texto'])
+
+			addData(myChart_1, respuesta['tiempo'], respuesta['Acc_x'], 0)
+			addData(myChart_1, respuesta['tiempo'], respuesta['Acc_y'], 1)
+			addData(myChart_1, respuesta['tiempo'], respuesta['Acc_z'], 2)
+
+		}});
+	}
+
+	setInterval(actualizarDatos, 150)
+
+
+
+	var ctx1 = document.getElementById("chart_1").getContext('2d');
+	myChart_1 = new Chart(ctx1, {
+		type: 'line',
+		data: {
+			datasets: [{ 
+				data: [],
+				label: "Eje X",
+				borderColor: "#cd3e3e",
+				fill: false
+			},
+			{ 
+				data: [],
+				label: "Eje Y",
+				borderColor: "#63a84f",
+				fill: false
+			},
+			{ 
+				data: [],
+				label: "Eje Z",
+				borderColor: "#ffaf38",
+				fill: false
+			}
+			]},
+			options: {
+				events: [],
+				maintainAspectRatio: false,
+				legend: {
+					display: true,
+				},
+				title: {
+					display: true,
+					text: 'Medidas acelerómetro'
+				},
+				scales: {
+					yAxes: [{
+						scaleLabel: {
+							display: true,
+							labelString: 'Ángulo (deg)'
+						}
+					}],
+					xAxes: [{
+						type: 'linear',
+						ticks: {
+							display: true,
+							maxRotation: 0,
+							minRotation: 0
+						}
+					}]
+				}    
+			}
+		});
+
+	function addData(chart, label, data, dataset) {
+
+
+		if (chart.data.datasets[dataset].data.length < 100)
+		{
+			chart.data.datasets[dataset].data.push({x:label,y:data});
+		}
+		else
+		{
+			chart.data.datasets[dataset].data.shift()
+
+			chart.data.datasets[dataset].data.push({x:label,y:data});
+		}
+
+		xdata = []
+		for (i=0; i<chart.data.datasets[dataset].data.length; i++){
+			xdata.push(chart.data.datasets[dataset].data[i].x)
+		}
+
+		min = Math.min.apply(Math,xdata)
+		max = Math.max.apply(Math,xdata)
+
+		chart.config.options.scales.xAxes[0].ticks.min = min
+		chart.config.options.scales.xAxes[0].ticks.max = max
+
+		chart.update(0);
+	}
+
+</script>
+
+
+
+</html>
