@@ -1,0 +1,6 @@
+---
+applications:
+- name: mednet-juanjo-final
+  memory: 128M
+  services:
+  - mycloudant-alias
